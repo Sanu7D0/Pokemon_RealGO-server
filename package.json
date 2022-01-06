@@ -1,0 +1,21 @@
+{
+  "name": "pokemon_realgo_server",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.2",
+    "http-errors": "^2.0.0",
+    "sequelize": "^6.12.5",
+    "socket.io": "^4.4.0"
+  },
+  "devDependencies": {},
+  "description": ""
+}

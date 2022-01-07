@@ -13,9 +13,8 @@
   "dependencies": {
     "express": "^4.17.2",
     "http-errors": "^2.0.0",
-    "sequelize": "^6.12.5",
+    "pg": "^8.7.1",
     "socket.io": "^4.4.0"
   },
-  "devDependencies": {},
   "description": ""
 }

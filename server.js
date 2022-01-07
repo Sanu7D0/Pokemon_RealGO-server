@@ -1,23 +1,28 @@
+import { randomInt } from "crypto";
 import express from "express";
 import * as http from "http";
 import { Server } from "socket.io";
+// import { Pool } from "pg";
 
 const app = express();
 const server = http.createServer(app);
-// const io = socketIo(server);
 const io = new Server(server);
 
-// DB connect
-/*const { sequelize, User } = require("./models");
-
-sequelize
-  .sync()
-  .then(() => {
-    console.log("DB connection success");
-  })
-  .catch((err) => {
-    console.error(err);
-  });*/
+// Connect Postgres
+/*const pg = new Pool({
+  user: 'postgres',
+  host: 'localhost',
+  database: 'postgres',
+  password: '1234',
+  port: 1234
+});
+pg.connect(err => {
+  if (err) {
+    console.log(err);
+  } else {
+    console.log("Connected to db");
+  }
+});*/
 
 // http request 에러 방지
 var allowCrossDomain = function (req, res, next) {
@@ -52,11 +57,19 @@ app.get("/", (req, res) => {
 });
 
 // simple socket
+var connectCount = 0;
 io.on("connection", (socket) => {
-  console.log(`Socket connected ${socket.id}`);
+  console.log(`Socket connected ${socket.id}  ${++connectCount}`);
 
-  socket.on("roomjoin", (userid) => {
-    console.log(userid);
+  socket.on("room", (obj) => {
+    socket.join(obj.roomId);
+  });
+
+  socket.on("attack", (obj) => {
+    io.to(obj.roomId).emit("transferAttack", obj);
+    obj.damage = obj.damage + Math.random() * 3;
+    console.log(`[${obj.socketId}] attack ${obj.damage}`);
+    // socket.to("some room").emit("some evet");
   });
 
   socket.on("message", (obj) => {
@@ -66,8 +79,18 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log(`Socket disconnected: ${socket.id}`);
+    console.log(`Socket disconnected: ${socket.id}  ${--connectCount}`);
   });
+});
+
+io.of("/").adapter.on("create-room", (room) => {
+  console.log(`room ${room} was created`);
+});
+io.of("/").adapter.on("join-room", (room, id) => {
+  console.log(`socket ${id} has joined room ${room}`);
+});
+io.of("/").adapter.on("leave-room", (room, id) => {
+  // TODO: 사람 없으면 room 삭제
 });
 
 // 8080 포트로 서버 오픈

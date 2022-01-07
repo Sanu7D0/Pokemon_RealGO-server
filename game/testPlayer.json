@@ -1,0 +1,43 @@
+{
+  "id": "evilAndroid",
+  "pokemons": [
+    {
+      "id": "evilPokemon1",
+      "level": 1,
+      "maxHp": 50,
+      "type": 1,
+      "speed": 3,
+      "atk": 5,
+      "stk": 5,
+      "def": 3,
+      "sef": 3,
+      "skills": [
+        {
+          "type": 1,
+          "category": 0,
+          "power": 5,
+          "acc": 1
+        }
+      ]
+    },
+    {
+      "id": "evilPokemon2",
+      "level": 1,
+      "maxHp": 40,
+      "type": 2,
+      "speed": 2,
+      "atk": 4,
+      "stk": 5,
+      "def": 4,
+      "sef": 2,
+      "skills": [
+        {
+          "type": 2,
+          "category": 0,
+          "power": 6,
+          "acc": 1
+        }
+      ]
+    }
+  ]
+}

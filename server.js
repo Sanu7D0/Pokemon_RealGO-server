@@ -1,28 +1,11 @@
-import { randomInt } from "crypto";
 import express from "express";
 import * as http from "http";
 import { Server } from "socket.io";
-// import { Pool } from "pg";
+import { BattleScene } from "./game/BattleScene.js";
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-
-// Connect Postgres
-/*const pg = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'postgres',
-  password: '1234',
-  port: 1234
-});
-pg.connect(err => {
-  if (err) {
-    console.log(err);
-  } else {
-    console.log("Connected to db");
-  }
-});*/
 
 // http request 에러 방지
 var allowCrossDomain = function (req, res, next) {
@@ -58,11 +41,28 @@ app.get("/", (req, res) => {
 
 // simple socket
 var connectCount = 0;
+var battleScenes = {};
 io.on("connection", (socket) => {
   console.log(`Socket connected ${socket.id}  ${++connectCount}`);
 
   socket.on("room", (obj) => {
     socket.join(obj.roomId);
+
+    // TODO: obj.roomId --hash--> id 만들기 (단어 등 중복 피하기 위해)
+    if (obj.roomId in battleScenes) {
+      battleScenes[obj.roomId].registerPlayer(socket.id, obj.player);
+      // 배틀 시작
+      if (io.sockets.adapter.rooms.get(obj.roomId).size === 2) {
+        battleScenes[obj.roomId].startBattle();
+      }
+    } else {
+      battleScenes[obj.roomId] = new BattleScene();
+      battleScenes[obj.roomId].registerPlayer(socket.id, obj.player);
+    }
+  });
+
+  socket.on("skill", (obj) => {
+    battleScenes[obj.roomId].receiveSkillSelection(socket.id, obj.skill);
   });
 
   socket.on("attack", (obj) => {
@@ -72,14 +72,10 @@ io.on("connection", (socket) => {
     // socket.to("some room").emit("some evet");
   });
 
-  socket.on("message", (obj) => {
-    // 클라이언트에서 message라는 이름의 이벤트를 받았을 경우 호출
-    console.log("Server received data");
-    console.log(obj);
-  });
-
   socket.on("disconnect", () => {
     console.log(`Socket disconnected: ${socket.id}  ${--connectCount}`);
+
+    // TODO: delete battleScene
   });
 });
 
@@ -89,9 +85,8 @@ io.of("/").adapter.on("create-room", (room) => {
 io.of("/").adapter.on("join-room", (room, id) => {
   console.log(`socket ${id} has joined room ${room}`);
 });
-io.of("/").adapter.on("leave-room", (room, id) => {
-  // TODO: 사람 없으면 room 삭제
-});
+/*io.of("/").adapter.on("leave-room", (room, id) => {
+});*/
 
 // 8080 포트로 서버 오픈
 server.listen(8080, function () {

@@ -2,6 +2,7 @@ import express from "express";
 import * as http from "http";
 import { Server } from "socket.io";
 import { BattleScene } from "./game/BattleScene.js";
+import { hashRoomId } from "./Utils/RoomUitls.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -46,36 +47,30 @@ io.on("connection", (socket) => {
   console.log(`Socket connected ${socket.id}  ${++connectCount}`);
 
   socket.on("room", (obj) => {
-    socket.join(obj.roomId);
+    const hRoomId = hashRoomId(obj.roomId);
+    
+    socket.join(hRoomId);
 
-    // TODO: obj.roomId --hash--> id 만들기 (단어 등 중복 피하기 위해)
-    if (obj.roomId in battleScenes) {
-      battleScenes[obj.roomId].registerPlayer(socket.id, obj.player);
+    if (hRoomId in battleScenes) {
+      battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
       // 배틀 시작
-      if (io.sockets.adapter.rooms.get(obj.roomId).size === 2) {
-        battleScenes[obj.roomId].startBattle();
+      if (io.sockets.adapter.rooms.get(hRoomId).size === 2) {
+        battleScenes[hRoomId].startBattle();
       }
     } else {
-      battleScenes[obj.roomId] = new BattleScene();
-      battleScenes[obj.roomId].registerPlayer(socket.id, obj.player);
+      battleScenes[hRoomId] = new BattleScene();
+      battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
     }
   });
 
   socket.on("skill", (obj) => {
-    battleScenes[obj.roomId].receiveSkillSelection(socket.id, obj.skill);
-  });
-
-  socket.on("attack", (obj) => {
-    io.to(obj.roomId).emit("transferAttack", obj);
-    obj.damage = obj.damage + Math.random() * 3;
-    console.log(`[${obj.socketId}] attack ${obj.damage}`);
-    // socket.to("some room").emit("some evet");
+    battleScenes[hashRoomId(obj.roomId)].receiveSkillSelection(socket.id, obj.skill);
   });
 
   socket.on("disconnect", () => {
     console.log(`Socket disconnected: ${socket.id}  ${--connectCount}`);
 
-    // TODO: delete battleScene
+    // TODO: delete battleScene and levae room
   });
 });
 
@@ -88,7 +83,7 @@ io.of("/").adapter.on("join-room", (room, id) => {
 /*io.of("/").adapter.on("leave-room", (room, id) => {
 });*/
 
-// 8080 포트로 서버 오픈
-server.listen(8080, function () {
-  console.log(`Start! express server on port 8080`);
+// 80 포트로 서버 오픈
+server.listen(80, function () {
+  console.log(`Start! express server on port 80`);
 });

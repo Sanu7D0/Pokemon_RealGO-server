@@ -1,23 +1,11 @@
 import express from "express";
 import * as http from "http";
 import { Server } from "socket.io";
+import { BattleScene } from "./game/BattleScene.js";
 
 const app = express();
 const server = http.createServer(app);
-// const io = socketIo(server);
 const io = new Server(server);
-
-// DB connect
-/*const { sequelize, User } = require("./models");
-
-sequelize
-  .sync()
-  .then(() => {
-    console.log("DB connection success");
-  })
-  .catch((err) => {
-    console.error(err);
-  });*/
 
 // http request 에러 방지
 var allowCrossDomain = function (req, res, next) {
@@ -52,23 +40,53 @@ app.get("/", (req, res) => {
 });
 
 // simple socket
+var connectCount = 0;
+var battleScenes = {};
 io.on("connection", (socket) => {
-  console.log(`Socket connected ${socket.id}`);
+  console.log(`Socket connected ${socket.id}  ${++connectCount}`);
 
-  socket.on("roomjoin", (userid) => {
-    console.log(userid);
+  socket.on("room", (obj) => {
+    socket.join(obj.roomId);
+
+    // TODO: obj.roomId --hash--> id 만들기 (단어 등 중복 피하기 위해)
+    if (obj.roomId in battleScenes) {
+      battleScenes[obj.roomId].registerPlayer(socket.id, obj.player);
+      // 배틀 시작
+      if (io.sockets.adapter.rooms.get(obj.roomId).size === 2) {
+        battleScenes[obj.roomId].startBattle();
+      }
+    } else {
+      battleScenes[obj.roomId] = new BattleScene();
+      battleScenes[obj.roomId].registerPlayer(socket.id, obj.player);
+    }
   });
 
-  socket.on("message", (obj) => {
-    // 클라이언트에서 message라는 이름의 이벤트를 받았을 경우 호출
-    console.log("Server received data");
-    console.log(obj);
+  socket.on("skill", (obj) => {
+    battleScenes[obj.roomId].receiveSkillSelection(socket.id, obj.skill);
+  });
+
+  socket.on("attack", (obj) => {
+    io.to(obj.roomId).emit("transferAttack", obj);
+    obj.damage = obj.damage + Math.random() * 3;
+    console.log(`[${obj.socketId}] attack ${obj.damage}`);
+    // socket.to("some room").emit("some evet");
   });
 
   socket.on("disconnect", () => {
-    console.log(`Socket disconnected: ${socket.id}`);
+    console.log(`Socket disconnected: ${socket.id}  ${--connectCount}`);
+
+    // TODO: delete battleScene
   });
 });
+
+io.of("/").adapter.on("create-room", (room) => {
+  console.log(`room ${room} was created`);
+});
+io.of("/").adapter.on("join-room", (room, id) => {
+  console.log(`socket ${id} has joined room ${room}`);
+});
+/*io.of("/").adapter.on("leave-room", (room, id) => {
+});*/
 
 // 8080 포트로 서버 오픈
 server.listen(8080, function () {

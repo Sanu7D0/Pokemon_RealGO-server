@@ -1,9 +1,7 @@
-import { createHash } from 'crypto';
+import { createHash } from "crypto";
 
 function hashRoomId(roomId) {
-    let shasum = createHash('sha1');
-    shasum.update(toString(roomId));
-    shasum.digest('hex');
+  return createHash("sha1").update(roomId).digest("hex");
 }
 
 export { hashRoomId };

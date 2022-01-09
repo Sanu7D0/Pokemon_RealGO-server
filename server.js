@@ -1,4 +1,4 @@
-import express from "express";
+import express, { json } from "express";
 import * as http from "http";
 import { Server } from "socket.io";
 import { BattleScene } from "./game/BattleScene.js";
@@ -46,25 +46,30 @@ var battleScenes = {};
 io.on("connection", (socket) => {
   console.log(`Socket connected ${socket.id}  ${++connectCount}`);
 
-  socket.on("room", (obj) => {
+  socket.on("joinRoom", (obj) => {
     const hRoomId = hashRoomId(obj.roomId);
-    
+
     socket.join(hRoomId);
 
     if (hRoomId in battleScenes) {
-      battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
+      battleScenes[hRoomId].registerPlayer(socket.id, JSON.parse(obj.player));
       // 배틀 시작
       if (io.sockets.adapter.rooms.get(hRoomId).size === 2) {
         battleScenes[hRoomId].startBattle();
       }
     } else {
       battleScenes[hRoomId] = new BattleScene();
-      battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
+      battleScenes[hRoomId].registerPlayer(socket.id, JSON.parse(obj.player));
     }
   });
 
+  socket.on("create", (obj) => {});
+
   socket.on("skill", (obj) => {
-    battleScenes[hashRoomId(obj.roomId)].receiveSkillSelection(socket.id, obj.skill);
+    battleScenes[hashRoomId(obj.roomId)].receiveSkillSelection(
+      socket.id,
+      obj.skillIndex
+    );
   });
 
   socket.on("disconnect", () => {

@@ -1,7 +1,6 @@
 import { Player } from "./Player.js";
-import { Pokemon_TYPECHART } from "./Pokemon.js";
 
-const SELECT_TIMEOUT = 5000; // millisec
+const SELECT_TIMEOUT = 10000; // millisec
 
 export class BattleScene {
   constructor() {
@@ -11,9 +10,7 @@ export class BattleScene {
   }
 
   registerPlayer(id, player) {
-    this.players[id] = {}; // test object
-
-    // this.players[id] = new Player(player);
+    this.players[id] = new Player(player);
     this.players[id].ready = false;
   }
 
@@ -34,9 +31,10 @@ export class BattleScene {
     }, SELECT_TIMEOUT);
   }
 
-  receiveSkillSelection(id, skill) {
+  receiveSkillSelection(id, skillIndex) {
     if (this.isPlaying && !this.players[id].ready) {
       console.log(`[${this.turn}] Received skill from ${id}`);
+      this.players[id].fighter.selectSkill(skillIndex);
       this.players[id].ready = true;
 
       if (Object.keys(this.players).length === 2) {
@@ -58,21 +56,39 @@ export class BattleScene {
   }
 
   executeFight() {
-    console.log(`[${this.turn}] Executed a fight`);
-    /*
-    // 선공 결정
-    let firstAttacker = 0; // 1 -> pkm1, 2 -> pkm2
-    if (pokemon1.speed === pokemon2.speed) {
-      // 같으면 랜덤
-      firstAttacker = [1, 2]
-        .sort(() => Math.random() - Math.random())
-        .slice(0, 2);
-    } else if (pokemon1.speed > pokemon2.speed) {
-      firstAttacker = 1;
-    } else {
-      firstAttacker = 2;
-    }*/
+    // Juicy spagetties...!
+    let i = 0;
+    let pok1, pok2;
+    for (const prop in this.players) {
+      if (i === 0) {
+        pok1 = this.players[prop].fighter;
+      } else {
+        pok2 = this.players[prop].fighter;
+      }
+      i++;
+    }
 
+    // Nice spagettie
+    // 선공 정하기
+    if (pok1.speed > pok2.speed) {
+      pok1.attack(pok2);
+      pok2.attack(pok1);
+    } else if (pok1.speed < pok2.speed) {
+      pok2.attack(pok1);
+      pok1.attack(pok2);
+    } else {
+      // 랜덤 순서
+      if (Math.random() > 0.5) {
+        pok1.attack(pok2);
+        pok2.attack(pok1);
+      } else {
+        pok2.attack(pok1);
+        pok1.attack(pok2);
+      }
+    }
+
+    console.log(`[${this.turn}] Executed a fight`);
+    // reset to prepare
     Object.entries(this.players).forEach(([key, value]) => {
       this.players[key].ready = false;
     });

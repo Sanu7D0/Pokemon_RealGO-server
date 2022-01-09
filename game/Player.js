@@ -5,14 +5,10 @@ class Player {
     this.id = obj.id;
 
     this.pokemons = [];
-    obj.pokemons.forEach((p) => {
-      this.pokemons.push(new Pokemon(p));
-    });
-    this.fighter = pokemons[0];
-  }
-
-  get fighter() {
-    return this.fighter;
+    for (var idx in obj.pokemons) {
+      this.pokemons.push(new Pokemon(obj.pokemons[idx]));
+    }
+    this.fighter = this.pokemons[0];
   }
 }
 

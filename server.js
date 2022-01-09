@@ -1,4 +1,4 @@
-import express, { json } from "express";
+import express from "express";
 import * as http from "http";
 import { Server } from "socket.io";
 import { BattleScene } from "./game/BattleScene.js";
@@ -46,7 +46,7 @@ var battleScenes = {};
 io.on("connection", (socket) => {
   console.log(`Socket connected ${socket.id}  ${++connectCount}`);
 
-  socket.on("joinRoom", (obj) => {
+  socket.on("join", (obj) => {
     const hRoomId = hashRoomId(obj.roomId);
 
     socket.join(hRoomId);
@@ -58,12 +58,12 @@ io.on("connection", (socket) => {
         battleScenes[hRoomId].startBattle();
       }
     } else {
-      battleScenes[hRoomId] = new BattleScene();
+      battleScenes[hRoomId] = new BattleScene(hRoomId);
       battleScenes[hRoomId].registerPlayer(socket.id, JSON.parse(obj.player));
     }
   });
 
-  socket.on("create", (obj) => {});
+  // socket.on("create", (obj) => {});
 
   socket.on("skill", (obj) => {
     battleScenes[hashRoomId(obj.roomId)].receiveSkillSelection(
@@ -92,3 +92,13 @@ io.of("/").adapter.on("join-room", (room, id) => {
 server.listen(80, function () {
   console.log(`Start! express server on port 80`);
 });
+
+function gameOver(roomId) {
+  io.to(roomId).emit("gameover");
+}
+
+function responsePokHp(roomId, resultObj) {
+  io.to(roomId).emit("battle_result", JSON.parse(JSON.stringify(resultObj)));
+}
+
+export { gameOver, responsePokHp };

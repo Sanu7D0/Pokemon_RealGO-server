@@ -1,9 +1,11 @@
+import { gameOver, responsePokHp } from "../server.js";
 import { Player } from "./Player.js";
 
 const SELECT_TIMEOUT = 10000; // millisec
 
 export class BattleScene {
-  constructor() {
+  constructor(roomId) {
+    this.roomId = roomId;
     this.turn = 0;
     this.isPlaying = true;
     this.players = {};
@@ -19,6 +21,10 @@ export class BattleScene {
     this.skillSelectThread();
   }
 
+  endBattle() {
+    gameOver(this.roomId);
+  }
+
   async skillSelectThread() {
     let threadTurn = this.turn;
     console.log(`[${this.turn}] Timeout set`);
@@ -27,6 +33,9 @@ export class BattleScene {
       if (threadTurn === this.turn) {
         this.isPlaying = false;
         console.log(`[${this.turn}] Timeout!`);
+
+        // Game over
+        this.endBattle();
       }
     }, SELECT_TIMEOUT);
   }
@@ -86,6 +95,19 @@ export class BattleScene {
         pok1.attack(pok2);
       }
     }
+
+    // Response to clients
+    let resultObj = {
+      pokemon1: {
+        id: pok1.id,
+        hp: pok1.hp,
+      },
+      pokemon2: {
+        id: pok2.id,
+        hp: pok2.hp,
+      },
+    };
+    responsePokHp(this.roomId, resultObj);
 
     console.log(`[${this.turn}] Executed a fight`);
     // reset to prepare

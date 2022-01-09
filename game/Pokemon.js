@@ -48,7 +48,7 @@ class Pokemon {
       target.def
     );
 
-    const attackResult = target.getDamage(damage);
+    target.getDamage(damage);
     console.log(
       `P[${this.id}, ${this.hp.toFixed(2)}] -> P[${
         target.id
@@ -118,7 +118,7 @@ const calculateDamage = function (
 ) {
   let mod1 = 1.0;
   let mod2 = 1.0;
-  let mod3 = 1.0;
+  // let mod3 = 1.0;
   let critical = 1.0;
 
   let typeEffectness1 = 1.0;

@@ -49,35 +49,60 @@ io.on("connection", (socket) => {
   socket.on("room", (obj) => {
     const hRoomId = hashRoomId(obj.roomId);
 
+    // leave all current room before join new room
+    var rooms = io.sockets.adapter.sids[socket.id];
+    for (var room in rooms) {
+      socket.leave(room);
+    }
     socket.join(hRoomId);
 
     if (hRoomId in battleScenes) {
-      battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
-      // 배틀 시작
-      if (io.sockets.adapter.rooms.get(hRoomId).size === 2) {
-        // Notify to clients that battle started
-        let startObj = battleScenes[hRoomId].startBattle();
-        io.to(hRoomId).emit("battle_start", JSON.stringify(startObj));
+      let CONTINUE = true;
+      try {
+        battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
+      } catch (e) {
+        console.error("Register player failed");
+        CONTINUE = false;
+        clearRoom(hRoomId);
       }
-    } else {
-      battleScenes[hRoomId] = new BattleScene(hRoomId);
-      battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
+
+      if (CONTINUE) {
+        // 배틀 시작
+        if (io.sockets.adapter.rooms.get(hRoomId).size === 2) {
+          // Notify to clients that battle started
+          try {
+            let startObj = battleScenes[hRoomId].startBattle();
+            io.to(hRoomId).emit("battle_start", JSON.stringify(startObj));
+          } catch (e) {
+            console.error("Start battle failed");
+          }
+        }
+      } else {
+        try {
+          battleScenes[hRoomId] = new BattleScene(hRoomId);
+          battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
+        } catch (e) {
+          console.error("Register player failed");
+        }
+      }
     }
   });
 
   // socket.on("create", (obj) => {});
 
   socket.on("skill", (obj) => {
-    battleScenes[hashRoomId(obj.roomId)].receiveSkillSelection(
-      socket.id,
-      obj.skillIndex
-    );
+    try {
+      battleScenes[hashRoomId(obj.roomId)].receiveSkillSelection(
+        socket.id,
+        obj.skillIndex
+      );
+    } catch (e) {
+      console.error("Receive skill selection failed");
+    }
   });
 
   socket.on("disconnect", () => {
     console.log(`Socket disconnected: ${socket.id}  ${--connectCount}`);
-
-    // TODO: delete battleScene and levae room
   });
 });
 

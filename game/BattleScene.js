@@ -68,7 +68,11 @@ export class BattleScene {
         });
 
         if (bothReady) {
-          this.executeFight();
+          try {
+            this.executeFight();
+          } catch (e) {
+            console.error("Excute fight failed");
+          }
         }
       }
     } else {

@@ -132,6 +132,7 @@ const calculateDamage = function (
   // let mod3 = 1.0;
   let critical = 1.0;
 
+  // TODO: 기술 타입 -> 방어 타입 계산으로 바꾸기
   let typeEffectness1 = 1.0;
   atkType1--;
   atkType2--;
@@ -152,11 +153,11 @@ const calculateDamage = function (
   let effectText = "";
   const effectiveness = typeEffectness1 * typeEffectness2;
   if (effectiveness >= 2) {
-    effectText = "효과가 굉장했다!";
+    effectText = "효과는 굉장했다!";
   } else if (1 <= effectiveness && effectiveness < 2) {
-    effectText = "보통 효과";
+    effectText = ""; // blank text
   } else if (0.5 <= effectiveness && effectiveness < 1) {
-    effectText = "효과가 별로인 것 같다...";
+    effectText = "효과는 별로였다";
   } else {
     effectText = "효과가 없는 것 같다...";
   }

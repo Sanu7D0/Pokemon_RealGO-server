@@ -18,15 +18,14 @@ export class BattleScene {
 
   startBattle() {
     // 싸우고 있는 포켓몬 정보들 전달
-    let startObj = [];
+    let startObj = {
+      fights: [],
+    };
     Object.entries(this.players).forEach(([key, value]) => {
       let p = this.players[key];
-      startObj.push({
-        ownerId: p.id,
-        id: p.fighter.id,
-        hp: p.fighter.hp,
-        name: p.fighter.name,
-      });
+      startObj.fights.push(
+        this.FightResult(p.id, p.fighter.name, "default", "", p.fighter.hp)
+      );
     });
     console.log("Battle started");
     this.skillSelectThread();
@@ -94,11 +93,11 @@ export class BattleScene {
     let owner1, owner2;
     for (const prop in this.players) {
       if (i === 0) {
-        owner1 = this.players[prop].id;
-        pok1 = this.players[prop].fighter;
+        owner1 = this.players[prop];
+        pok1 = owner1.fighter;
       } else {
-        owner2 = this.players[prop].id;
-        pok2 = this.players[prop].fighter;
+        owner2 = this.players[prop];
+        pok2 = owner2.fighter;
       }
       i++;
     }
@@ -122,7 +121,7 @@ export class BattleScene {
       );
 
       if (attacked.result === "default") {
-        attacked = secondPok.attack(firstPok).result;
+        attacked = secondPok.attack(firstPok);
         fightResult2 = this.FightResult(
           secondOwner.id,
           secondPok.name,
@@ -144,8 +143,13 @@ export class BattleScene {
               `나와라 ${nextFighter.name}!`,
               nextFighter.hp
             );
+            _state.key = "switch";
+            console.log(`[${this.turn}] Next pokemon of ${firstOwner.id}`);
           } else {
+            // No more fighters -> game over
             _state.winner = secondOwner.id;
+            _state.key = "end";
+            console.log(`[${this.turn}] Winner = ${secondOwner.id}`);
           }
         }
       } else {
@@ -157,6 +161,7 @@ export class BattleScene {
           "None",
           secondPok.hp
         );
+        fightResult1.hp = firstPok.hp;
         if (secondOwner.setNextFighter()) {
           let nextFighter = secondOwner.fighter;
           _state.switch = this.FightResult(
@@ -166,8 +171,12 @@ export class BattleScene {
             `나와라 ${nextFighter.name}!`,
             nextFighter.hp
           );
+          _state.key = "switch";
+          console.log(`[${this.turn}] Next pokemon of ${firstOwner.id}`);
         } else {
           _state.winner = firstOwner.id;
+          _state.key = "end";
+          console.log(`[${this.turn}] Winner = ${firstOwner.id}`);
         }
       }
     };

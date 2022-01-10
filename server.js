@@ -48,23 +48,30 @@ io.on("connection", (socket) => {
 
   socket.on("room", (obj) => {
     const hRoomId = hashRoomId(obj.roomId);
-    
+
     socket.join(hRoomId);
 
     if (hRoomId in battleScenes) {
       battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
       // 배틀 시작
       if (io.sockets.adapter.rooms.get(hRoomId).size === 2) {
-        battleScenes[hRoomId].startBattle();
+        // Notify to clients that battle started
+        let startObj = battleScenes[hRoomId].startBattle();
+        io.to(hRoomId).emit("battle_start", JSON.stringify(startObj));
       }
     } else {
-      battleScenes[hRoomId] = new BattleScene();
+      battleScenes[hRoomId] = new BattleScene(hRoomId);
       battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
     }
   });
 
+  // socket.on("create", (obj) => {});
+
   socket.on("skill", (obj) => {
-    battleScenes[hashRoomId(obj.roomId)].receiveSkillSelection(socket.id, obj.skill);
+    battleScenes[hashRoomId(obj.roomId)].receiveSkillSelection(
+      socket.id,
+      obj.skillIndex
+    );
   });
 
   socket.on("disconnect", () => {
@@ -87,3 +94,13 @@ io.of("/").adapter.on("join-room", (room, id) => {
 server.listen(80, function () {
   console.log(`Start! express server on port 80`);
 });
+
+function gameOver(roomId) {
+  io.to(roomId).emit("gameover");
+}
+
+function emitBattleResult(roomId, resultObj) {
+  io.to(roomId).emit("battle_result", JSON.stringify(resultObj));
+}
+
+export { gameOver, emitBattleResult };

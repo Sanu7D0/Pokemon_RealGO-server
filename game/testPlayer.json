@@ -6,16 +6,16 @@
       "level": 1,
       "maxHp": 50,
       "type": 1,
-      "speed": 3,
-      "atk": 5,
-      "stk": 5,
-      "def": 3,
-      "sef": 3,
+      "speed": 30,
+      "atk": 50,
+      "stk": 50,
+      "def": 30,
+      "sef": 30,
       "skills": [
         {
           "type": 1,
           "category": 0,
-          "power": 5,
+          "power": 50,
           "acc": 1
         }
       ]
@@ -25,16 +25,16 @@
       "level": 1,
       "maxHp": 40,
       "type": 2,
-      "speed": 2,
-      "atk": 4,
-      "stk": 5,
-      "def": 4,
-      "sef": 2,
+      "speed": 50,
+      "atk": 40,
+      "stk": 50,
+      "def": 40,
+      "sef": 30,
       "skills": [
         {
           "type": 2,
           "category": 0,
-          "power": 6,
+          "power": 60,
           "acc": 1
         }
       ]

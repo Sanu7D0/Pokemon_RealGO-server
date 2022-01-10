@@ -5,14 +5,22 @@ class Player {
     this.id = obj.id;
 
     this.pokemons = [];
-    obj.pokemons.forEach((p) => {
-      this.pokemons.push(new Pokemon(p));
-    });
-    this.fighter = pokemons[0];
+    for (var idx in obj.pokemons) {
+      this.pokemons.push(new Pokemon(obj.pokemons[idx]));
+    }
+    this.fighterIdx = 0;
+    this.fighter = this.pokemons[this.fighterIdx];
   }
 
-  get fighter() {
-    return this.fighter;
+  // Switch to next index pokemon
+  // If no more to switch, return false (Lose)
+  setNextFighter() {
+    if (this.fighterIdx >= this.pokemons.length - 1) {
+      return false;
+    }
+
+    this.fighter = this.pokemons[++this.fighterIdx];
+    return true;
   }
 }
 

@@ -76,13 +76,14 @@ export class BattleScene {
     }
   }
 
-  FightResult(_ownerId, _name, _result, _effect, _hp) {
+  FightResult(_ownerId, _name, _result, _effect, _hp, _attackOrder) {
     return {
       ownerId: _ownerId,
       name: _name,
       result: _result,
       effect: _effect,
       hp: _hp,
+      attackOrder: _attackOrder,
     };
   }
 
@@ -117,7 +118,8 @@ export class BattleScene {
         firstPok.name,
         "default",
         attacked.effect,
-        undefined
+        undefined,
+        1
       );
 
       if (attacked.result === "default") {
@@ -127,7 +129,8 @@ export class BattleScene {
           secondPok.name,
           "default",
           attacked.effect,
-          secondPok.hp
+          secondPok.hp,
+          2
         );
         fightResult1.hp = firstPok.hp;
 
@@ -141,7 +144,8 @@ export class BattleScene {
               nextFighter.name,
               "default",
               `나와라 ${nextFighter.name}!`,
-              nextFighter.hp
+              nextFighter.hp,
+              undefined
             );
             _state.key = "switch";
             console.log(`[${this.turn}] Next pokemon of ${firstOwner.id}`);
@@ -159,7 +163,8 @@ export class BattleScene {
           secondPok.name,
           "die",
           "None",
-          secondPok.hp
+          secondPok.hp,
+          undefined
         );
         fightResult1.hp = firstPok.hp;
         if (secondOwner.setNextFighter()) {
@@ -169,7 +174,8 @@ export class BattleScene {
             nextFighter.name,
             "default",
             `나와라 ${nextFighter.name}!`,
-            nextFighter.hp
+            nextFighter.hp,
+            undefined
           );
           _state.key = "switch";
           console.log(`[${this.turn}] Next pokemon of ${firstOwner.id}`);

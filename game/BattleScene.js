@@ -1,4 +1,4 @@
-import { gameOver, emitBattleResult } from "../server.js";
+import { emitBattleEnd, emitBattleResult } from "../server.js";
 import { Player } from "./Player.js";
 
 const SELECT_TIMEOUT = 30000; // millisec
@@ -33,10 +33,6 @@ export class BattleScene {
     return startObj;
   }
 
-  endBattle() {
-    gameOver(this.roomId);
-  }
-
   async skillSelectThread() {
     let threadTurn = this.turn;
     console.log(`[${this.turn}] Timeout set`);
@@ -47,7 +43,11 @@ export class BattleScene {
         console.log(`[${this.turn}] Timeout!`);
 
         // Game over
-        this.endBattle();
+        let _state = {
+          key: "end",
+          winner: "Draw",
+        };
+        emitBattleEnd(this.roomId, _state);
       }
     }, SELECT_TIMEOUT);
   }
@@ -153,7 +153,6 @@ export class BattleScene {
             // No more fighters -> game over
             _state.winner = secondOwner.id;
             _state.key = "end";
-            console.log(`[${this.turn}] Winner = ${secondOwner.id}`);
           }
         }
       } else {
@@ -182,7 +181,6 @@ export class BattleScene {
         } else {
           _state.winner = firstOwner.id;
           _state.key = "end";
-          console.log(`[${this.turn}] Winner = ${firstOwner.id}`);
         }
       }
     };
@@ -210,13 +208,18 @@ export class BattleScene {
       timer: SELECT_TIMEOUT,
     };
     emitBattleResult(this.roomId, resultObj);
-
     console.log(`[${this.turn}] Executed a fight`);
-    // reset to prepare
-    Object.entries(this.players).forEach(([key, value]) => {
-      this.players[key].ready = false;
-    });
-    this.turn += 1;
-    this.skillSelectThread();
+
+    if (_state.key === "end") {
+      console.log(`[${this.turn}] Winner = ${_state.winner}`);
+      emitBattleEnd(this.roomId, _state);
+    } else {
+      // reset to prepare
+      Object.entries(this.players).forEach(([key, value]) => {
+        this.players[key].ready = false;
+      });
+      this.turn += 1;
+      this.skillSelectThread();
+    }
   }
 }

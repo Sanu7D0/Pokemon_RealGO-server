@@ -95,12 +95,22 @@ server.listen(80, function () {
   console.log(`Start! express server on port 80`);
 });
 
-function gameOver(roomId) {
-  io.to(roomId).emit("gameover");
+function clearRoom(roomId) {
+  io.sockets.clients(roomId).forEach(function (s) {
+    s.leave(roomId);
+  });
+  if (roomId in battleScenes) {
+    delete battleScenes[roomId];
+  }
+}
+
+function emitBattleEnd(roomId, state) {
+  io.to(roomId).emit("battle_end", JSON.stringify(state));
+  clearRoom(roomId);
 }
 
 function emitBattleResult(roomId, resultObj) {
   io.to(roomId).emit("battle_result", JSON.stringify(resultObj));
 }
 
-export { gameOver, emitBattleResult };
+export { emitBattleEnd, emitBattleResult };

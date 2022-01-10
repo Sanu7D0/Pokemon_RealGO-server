@@ -46,20 +46,22 @@ var battleScenes = {};
 io.on("connection", (socket) => {
   console.log(`Socket connected ${socket.id}  ${++connectCount}`);
 
-  socket.on("join", (obj) => {
+  socket.on("room", (obj) => {
     const hRoomId = hashRoomId(obj.roomId);
 
     socket.join(hRoomId);
 
     if (hRoomId in battleScenes) {
-      battleScenes[hRoomId].registerPlayer(socket.id, JSON.parse(obj.player));
+      battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
       // 배틀 시작
       if (io.sockets.adapter.rooms.get(hRoomId).size === 2) {
-        battleScenes[hRoomId].startBattle();
+        // Notify to clients that battle started
+        let startObj = battleScenes[hRoomId].startBattle();
+        io.to(hRoomId).emit("battle_start", JSON.stringify(startObj));
       }
     } else {
       battleScenes[hRoomId] = new BattleScene(hRoomId);
-      battleScenes[hRoomId].registerPlayer(socket.id, JSON.parse(obj.player));
+      battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
     }
   });
 
@@ -97,8 +99,8 @@ function gameOver(roomId) {
   io.to(roomId).emit("gameover");
 }
 
-function responsePokHp(roomId, resultObj) {
-  io.to(roomId).emit("battle_result", JSON.parse(JSON.stringify(resultObj)));
+function emitBattleResult(roomId, resultObj) {
+  io.to(roomId).emit("battle_result", JSON.stringify(resultObj));
 }
 
-export { gameOver, responsePokHp };
+export { gameOver, emitBattleResult };

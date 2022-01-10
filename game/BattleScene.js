@@ -1,7 +1,7 @@
-import { gameOver, responsePokHp } from "../server.js";
+import { gameOver, emitBattleResult } from "../server.js";
 import { Player } from "./Player.js";
 
-const SELECT_TIMEOUT = 10000; // millisec
+const SELECT_TIMEOUT = 30000; // millisec
 
 export class BattleScene {
   constructor(roomId) {
@@ -17,8 +17,21 @@ export class BattleScene {
   }
 
   startBattle() {
+    // 싸우고 있는 포켓몬 정보들 전달
+    let startObj = [];
+    Object.entries(this.players).forEach(([key, value]) => {
+      let p = this.players[key];
+      startObj.push({
+        ownerId: p.id,
+        id: p.fighter.id,
+        hp: p.fighter.hp,
+        name: p.fighter.name,
+      });
+    });
     console.log("Battle started");
     this.skillSelectThread();
+
+    return startObj;
   }
 
   endBattle() {
@@ -65,49 +78,74 @@ export class BattleScene {
   }
 
   executeFight() {
+    let fightResult;
+
     // Juicy spagetties...!
     let i = 0;
     let pok1, pok2;
+    let owner1, owner2;
     for (const prop in this.players) {
       if (i === 0) {
+        owner1 = this.players[prop].id;
         pok1 = this.players[prop].fighter;
       } else {
+        owner2 = this.players[prop].id;
         pok2 = this.players[prop].fighter;
       }
       i++;
     }
 
+    const pok1FirstAttack = () => {
+      if (pok1.attack(pok2).result === "default") {
+        fightResult = pok2.attack(pok1).result;
+      } else {
+        // killed
+        fightResult = "kill";
+      }
+    };
+    const pok2FirstAttack = () => {
+      if (pok2.attack(pok1).result === "default") {
+        fightResult = pok1.attack(pok2).result;
+      } else {
+        // killed
+        fightResult = "kill";
+      }
+    };
+
     // Nice spagettie
     // 선공 정하기
     if (pok1.speed > pok2.speed) {
-      pok1.attack(pok2);
-      pok2.attack(pok1);
+      pok1FirstAttack();
     } else if (pok1.speed < pok2.speed) {
-      pok2.attack(pok1);
-      pok1.attack(pok2);
+      pok2FirstAttack();
     } else {
       // 랜덤 순서
       if (Math.random() > 0.5) {
-        pok1.attack(pok2);
-        pok2.attack(pok1);
+        pok1FirstAttack();
       } else {
-        pok2.attack(pok1);
-        pok1.attack(pok2);
+        pok2FirstAttack();
       }
     }
 
     // Response to clients
     let resultObj = {
-      pokemon1: {
-        id: pok1.id,
-        hp: pok1.hp,
-      },
-      pokemon2: {
-        id: pok2.id,
-        hp: pok2.hp,
-      },
+      pokemons: [
+        {
+          ownerId: owner1,
+          id: pok1.id,
+          hp: pok1.hp,
+          name: pok1.name,
+        },
+        {
+          ownerId: owner2,
+          id: pok2.id,
+          hp: pok2.hp,
+          name: pok2.name,
+        },
+      ],
+      timer: SELECT_TIMEOUT,
     };
-    responsePokHp(this.roomId, resultObj);
+    emitBattleResult(this.roomId, resultObj);
 
     console.log(`[${this.turn}] Executed a fight`);
     // reset to prepare
@@ -116,5 +154,7 @@ export class BattleScene {
     });
     this.turn += 1;
     this.skillSelectThread();
+
+    return fightResult;
   }
 }

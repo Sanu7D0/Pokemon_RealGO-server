@@ -26,7 +26,8 @@ class Pokemon {
   getDamage(dmg) {
     this.hp -= dmg;
     if (this.hp <= 0) {
-      this.die();
+      this.hp = 0;
+      // this.die();
     }
   }
 

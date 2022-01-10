@@ -8,7 +8,19 @@ class Player {
     for (var idx in obj.pokemons) {
       this.pokemons.push(new Pokemon(obj.pokemons[idx]));
     }
-    this.fighter = this.pokemons[0];
+    this.fighterIdx = 0;
+    this.fighter = this.pokemons[this.fighterIdx];
+  }
+
+  // Switch to next index pokemon
+  // If no more to switch, return false (Lose)
+  setNextFighter() {
+    if (this.fighterIdx >= this.pokemons.length - 1) {
+      return false;
+    }
+
+    this.fighter = this.pokemons[++this.fighterIdx];
+    return true;
   }
 }
 

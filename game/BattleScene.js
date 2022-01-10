@@ -77,9 +77,17 @@ export class BattleScene {
     }
   }
 
-  executeFight() {
-    let fightResult;
+  FightResult(_ownerId, _name, _result, _effect, _hp) {
+    return {
+      ownerId: _ownerId,
+      name: _name,
+      result: _result,
+      effect: _effect,
+      hp: _hp,
+    };
+  }
 
+  executeFight() {
     // Juicy spagetties...!
     let i = 0;
     let pok1, pok2;
@@ -95,54 +103,95 @@ export class BattleScene {
       i++;
     }
 
-    const pok1FirstAttack = () => {
-      if (pok1.attack(pok2).result === "default") {
-        fightResult = pok2.attack(pok1).result;
-      } else {
-        // killed
-        fightResult = "kill";
-      }
+    let _state = {
+      key: "default",
+      winner: "None",
+      switch: undefined,
     };
-    const pok2FirstAttack = () => {
-      if (pok2.attack(pok1).result === "default") {
-        fightResult = pok1.attack(pok2).result;
+    let fightResult1, fightResult2;
+
+    const excuteAttack = (firstOwner, firstPok, secondOwner, secondPok) => {
+      // Create fight result of pokemon 1
+      let attacked = firstPok.attack(secondPok);
+      fightResult1 = this.FightResult(
+        firstOwner.id,
+        firstPok.name,
+        "default",
+        attacked.effect,
+        undefined
+      );
+
+      if (attacked.result === "default") {
+        attacked = secondPok.attack(firstPok).result;
+        fightResult2 = this.FightResult(
+          secondOwner.id,
+          secondPok.name,
+          "default",
+          attacked.effect,
+          secondPok.hp
+        );
+        fightResult1.hp = firstPok.hp;
+
+        // pok2 killed pok1
+        if (attacked.result === "kill") {
+          fightResult1.result = "die";
+          if (firstOwner.setNextFighter()) {
+            let nextFighter = firstOwner.fighter;
+            _state.switch = this.FightResult(
+              firstOwner.id,
+              nextFighter.name,
+              "default",
+              `나와라 ${nextFighter.name}!`,
+              nextFighter.hp
+            );
+          } else {
+            _state.winner = secondOwner.id;
+          }
+        }
       } else {
-        // killed
-        fightResult = "kill";
+        // pok1 killed pok2 and no pok2 attack
+        fightResult2 = this.FightResult(
+          secondOwner.id,
+          secondPok.name,
+          "die",
+          "None",
+          secondPok.hp
+        );
+        if (secondOwner.setNextFighter()) {
+          let nextFighter = secondOwner.fighter;
+          _state.switch = this.FightResult(
+            secondOwner.id,
+            nextFighter.name,
+            "default",
+            `나와라 ${nextFighter.name}!`,
+            nextFighter.hp
+          );
+        } else {
+          _state.winner = firstOwner.id;
+        }
       }
     };
 
-    // Nice spagettie
     // 선공 정하기
     if (pok1.speed > pok2.speed) {
-      pok1FirstAttack();
+      excuteAttack(owner1, pok1, owner2, pok2);
     } else if (pok1.speed < pok2.speed) {
-      pok2FirstAttack();
+      excuteAttack(owner2, pok2, owner1, pok1);
     } else {
       // 랜덤 순서
       if (Math.random() > 0.5) {
-        pok1FirstAttack();
+        excuteAttack(owner1, pok1, owner2, pok2);
       } else {
-        pok2FirstAttack();
+        excuteAttack(owner2, pok2, owner1, pok1);
       }
     }
 
+    // TODO: results: [result1, result2], state: "gameover, switch to ~"
+
     // Response to clients
     let resultObj = {
-      pokemons: [
-        {
-          ownerId: owner1,
-          id: pok1.id,
-          hp: pok1.hp,
-          name: pok1.name,
-        },
-        {
-          ownerId: owner2,
-          id: pok2.id,
-          hp: pok2.hp,
-          name: pok2.name,
-        },
-      ],
+      fights: [fightResult1, fightResult2],
+      state: _state,
       timer: SELECT_TIMEOUT,
     };
     emitBattleResult(this.roomId, resultObj);
@@ -154,7 +203,5 @@ export class BattleScene {
     });
     this.turn += 1;
     this.skillSelectThread();
-
-    return fightResult;
   }
 }

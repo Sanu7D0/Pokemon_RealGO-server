@@ -45,7 +45,12 @@ class Pokemon {
       this.level,
       this.nextSkill.dmg,
       this.atk,
-      target.def
+      this.stk,
+      target.def,
+      target.sef,
+      this.nextSkill.type.id,
+      this.nextSkill.acc,
+      this.nextSkill.category.id
     );
 
     target.getDamage(damageResult.damage);
@@ -125,56 +130,72 @@ const calculateDamage = function (
   level,
   power,
   atk,
-  def
+  stk,
+  def,
+  sef,
+  skillType,
+  acc,
+  skillCategory
 ) {
   let mod1 = 1.0;
   let mod2 = 1.0;
   // let mod3 = 1.0;
   let critical = 1.0;
 
-  // TODO: 기술 타입 -> 방어 타입 계산으로 바꾸기
-  let typeEffectness1 = 1.0;
   atkType1--;
   atkType2--;
   defType1--;
   defType2--;
-  typeEffectness1 *= Pokemon_TYPECHART[atkType1][defType1];
-  if (defType2) {
-    typeEffectness1 *= Pokemon_TYPECHART[atkType1][defType2];
-  }
-  let typeEffectness2 = 1.0;
-  if (atkType2) {
-    typeEffectness2 *= Pokemon_TYPECHART[atkType2][defType1];
-    if (defType2) {
-      typeEffectness2 *= Pokemon_TYPECHART[atkType2][defType2];
-    }
-  }
+  skillType--;
+
+  let typeEffectness1 = 1.0 * Pokemon_TYPECHART[skillType][defType1];
+  let typeEffectness2 = 1.0 * Pokemon_TYPECHART[skillType][defType2];
 
   let effectText = "";
   const effectiveness = typeEffectness1 * typeEffectness2;
   if (effectiveness >= 2) {
     effectText = "효과는 굉장했다!";
   } else if (1 <= effectiveness && effectiveness < 2) {
-    effectText = ""; // blank text
+    effectText = "보통 효과"; // blank text
   } else if (0.5 <= effectiveness && effectiveness < 1) {
     effectText = "효과는 별로였다";
   } else {
     effectText = "효과가 없는 것 같다...";
   }
 
-  // console.log(typeEffectness1, typeEffectness2);
+  let selfTypeEffectness = 1.0;
+  if (skillType === atkType1 || skillType === atkType2) {
+    selfTypeEffectness = 1.5;
+  }
 
   let random = getRandomIntInclusive(85, 100);
 
+  // 1 -> 물리, 2 -> 특수
+  let attackBase, defBase;
+  if (skillCategory === 1) {
+    attackBase = atk;
+    defBase = def;
+  } else {
+    attackBase = stk;
+    defBase = sef;
+  }
+
   // gen 3  ERROR: Invalid equations... too low damage
-  const damage =
-    ((((((level * 2) / 5 + 2) * power * atk) / def / 50) * mod1 + 2) *
+  let damage =
+    ((((((level * 2) / 5 + 2) * power * attackBase) / defBase / 50) * mod1 +
+      2) *
       mod2 *
       critical *
+      selfTypeEffectness *
       typeEffectness1 *
       typeEffectness2 *
       random) /
     100;
+
+  if (getRandomIntInclusive(1, 100) > acc) {
+    damage = 0.0;
+    effectText = "빗나갔다!";
+  }
 
   return { damage: damage, effect: effectText };
 };

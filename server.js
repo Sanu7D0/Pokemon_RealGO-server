@@ -49,35 +49,64 @@ io.on("connection", (socket) => {
   socket.on("room", (obj) => {
     const hRoomId = hashRoomId(obj.roomId);
 
+    // leave all current room before join new room
+    var rooms = io.sockets.adapter.sids[socket.id];
+    for (var room in rooms) {
+      clearRoom(room);
+    }
+
+    // join room
     socket.join(hRoomId);
 
+    // register player to battle scene
     if (hRoomId in battleScenes) {
-      battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
-      // 배틀 시작
-      if (io.sockets.adapter.rooms.get(hRoomId).size === 2) {
-        // Notify to clients that battle started
-        let startObj = battleScenes[hRoomId].startBattle();
-        io.to(hRoomId).emit("battle_start", JSON.stringify(startObj));
+      let CONTINUE = true;
+      try {
+        battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
+      } catch (e) {
+        console.error("Register player failed");
+        CONTINUE = false;
+        clearRoom(hRoomId);
+      }
+
+      if (CONTINUE) {
+        // 배틀 시작
+        if (io.sockets.adapter.rooms.get(hRoomId).size === 2) {
+          // Notify to clients that battle started
+          try {
+            let startObj = battleScenes[hRoomId].startBattle();
+            io.to(hRoomId).emit("battle_start", JSON.stringify(startObj));
+          } catch (e) {
+            console.error("Start battle failed");
+          }
+        }
       }
     } else {
-      battleScenes[hRoomId] = new BattleScene(hRoomId);
-      battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
+      try {
+        // battle scene not instanced yet, instantiate
+        battleScenes[hRoomId] = new BattleScene(hRoomId);
+        battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
+      } catch (e) {
+        console.error("Register player failed");
+      }
     }
   });
 
   // socket.on("create", (obj) => {});
 
   socket.on("skill", (obj) => {
-    battleScenes[hashRoomId(obj.roomId)].receiveSkillSelection(
-      socket.id,
-      obj.skillIndex
-    );
+    try {
+      battleScenes[hashRoomId(obj.roomId)].receiveSkillSelection(
+        socket.id,
+        obj.skillIndex
+      );
+    } catch (e) {
+      console.error("Receive skill selection failed");
+    }
   });
 
   socket.on("disconnect", () => {
     console.log(`Socket disconnected: ${socket.id}  ${--connectCount}`);
-
-    // TODO: delete battleScene and levae room
   });
 });
 
@@ -87,20 +116,31 @@ io.of("/").adapter.on("create-room", (room) => {
 io.of("/").adapter.on("join-room", (room, id) => {
   console.log(`socket ${id} has joined room ${room}`);
 });
-/*io.of("/").adapter.on("leave-room", (room, id) => {
-});*/
+io.of("/").adapter.on("leave-room", (room, id) => {
+  console.log(`socket ${id} has left room ${room}`);
+});
 
 // 80 포트로 서버 오픈
 server.listen(80, function () {
   console.log(`Start! express server on port 80`);
 });
 
-function gameOver(roomId) {
-  io.to(roomId).emit("gameover");
+function clearRoom(roomId) {
+  /*io.sockets.clients(roomId).forEach(function (s) {
+    s.leave(roomId);
+  });*/
+  if (roomId in battleScenes) {
+    delete battleScenes[roomId];
+  }
+}
+
+function emitBattleEnd(roomId, state) {
+  io.to(roomId).emit("battle_end", JSON.stringify(state));
+  clearRoom(roomId);
 }
 
 function emitBattleResult(roomId, resultObj) {
   io.to(roomId).emit("battle_result", JSON.stringify(resultObj));
 }
 
-export { gameOver, emitBattleResult };
+export { emitBattleEnd, emitBattleResult };

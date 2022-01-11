@@ -20,28 +20,24 @@ export class BattleScene {
     // 싸우고 있는 포켓몬 정보들 전달
     let startObj = {
       fights: [],
-      pokemonNames: [],
     };
     Object.entries(this.players).forEach(([key, value]) => {
       let p = this.players[key];
 
       // 시작 포켓몬 정보
-      startObj.fights.push(
-        this.FightResult(
-          p.id,
-          p.fighter.name,
-          p.fighter.id,
-          "default",
-          "",
-          p.fighter.hp,
-          undefined,
-          p.fighter.maxHp
-        )
+      let fightResult = this.FightResult(
+        p.id,
+        p.fighter.name,
+        p.fighter.id,
+        "default",
+        "",
+        p.fighter.hp,
+        undefined,
+        p.fighter.maxHp
       );
-      // 포켓몬 이름들 넣기
-      p.pokemons.forEach((pok) => {
-        startObj.pokemonNames.push(pok.name);
-      });
+      fightResult.skills = p.fighter.skills;
+
+      startObj.fights.push(fightResult);
     });
     // 포켓몬 이름 중복 제거
     startObj.pokemonNames = [...new Set(startObj.pokemonNames)];
@@ -193,6 +189,7 @@ export class BattleScene {
               undefined,
               nextFighter.maxHp
             );
+            _state.switch.skills = nextFighter.skills;
             _state.key = "switch";
             console.log(`[${this.turn}] Next pokemon of ${firstOwner.id}`);
           } else {
@@ -226,6 +223,7 @@ export class BattleScene {
             undefined,
             nextFighter.maxHp
           );
+          _state.switch.skills = nextFighter.skills;
           _state.key = "switch";
           console.log(`[${this.turn}] Next pokemon of ${firstOwner.id}`);
         } else {

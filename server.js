@@ -52,10 +52,13 @@ io.on("connection", (socket) => {
     // leave all current room before join new room
     var rooms = io.sockets.adapter.sids[socket.id];
     for (var room in rooms) {
-      socket.leave(room);
+      clearRoom(room);
     }
+
+    // join room
     socket.join(hRoomId);
 
+    // register player to battle scene
     if (hRoomId in battleScenes) {
       let CONTINUE = true;
       try {
@@ -77,13 +80,14 @@ io.on("connection", (socket) => {
             console.error("Start battle failed");
           }
         }
-      } else {
-        try {
-          battleScenes[hRoomId] = new BattleScene(hRoomId);
-          battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
-        } catch (e) {
-          console.error("Register player failed");
-        }
+      }
+    } else {
+      try {
+        // battle scene not instanced yet, instantiate
+        battleScenes[hRoomId] = new BattleScene(hRoomId);
+        battleScenes[hRoomId].registerPlayer(socket.id, obj.player);
+      } catch (e) {
+        console.error("Register player failed");
       }
     }
   });
@@ -112,8 +116,9 @@ io.of("/").adapter.on("create-room", (room) => {
 io.of("/").adapter.on("join-room", (room, id) => {
   console.log(`socket ${id} has joined room ${room}`);
 });
-/*io.of("/").adapter.on("leave-room", (room, id) => {
-});*/
+io.of("/").adapter.on("leave-room", (room, id) => {
+  console.log(`socket ${id} has left room ${room}`);
+});
 
 // 80 포트로 서버 오픈
 server.listen(80, function () {
@@ -121,9 +126,9 @@ server.listen(80, function () {
 });
 
 function clearRoom(roomId) {
-  io.sockets.clients(roomId).forEach(function (s) {
+  /*io.sockets.clients(roomId).forEach(function (s) {
     s.leave(roomId);
-  });
+  });*/
   if (roomId in battleScenes) {
     delete battleScenes[roomId];
   }
